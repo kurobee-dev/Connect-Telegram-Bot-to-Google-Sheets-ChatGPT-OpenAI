@@ -2,7 +2,7 @@
 // allowUsers      : [nnnnnnnnn, nnnnnnnnn, nnnnnnnnn,]
 // bot_token       : [Telegram bot token]
 // openai_api_key  : [openai_api_key]
-// openai_url      : [/v1/chat/completions ] https://platform.openai.com/docs/models/model-endpoint-compatibility
+// openai_endpoint : [/v1/chat/completions ] https://platform.openai.com/docs/models/model-endpoint-compatibility
 // openai_model    : [gpt-3.5-turbo] https://platform.openai.com/docs/models/model-endpoint-compatibility 
 // openai_max_token: [2048]
 // ssID            : [SpreadSheetID]
@@ -19,7 +19,8 @@ var ALLOWED_USER_IDS = userProperties.getProperty('allowUsers')
 // https://developers.google.com/apps-script/reference/properties?hl=en
 var BOT_TOKEN = userProperties.getProperty('bot_token');           // @BotFather in Telegram
 var OPENAI_API_KEY = userProperties.getProperty('openai_api_key'); // https://beta.openai.com/account/api-keys
-var OPENAI_URL = "https://api.openai.com" + userProperties.getProperty('openai_url');
+var OPENAI_ENDPOINT = userProperties.getProperty('openai_endpoint');
+var OPENAI_URL = "https://api.openai.com" + OPENAI_ENDPOINT;
 var OPENAI_MODEL = userProperties.getProperty('openai_model');
 var OPENAI_MAX_TOKEN = parseInt(userProperties.getProperty('openai_max_token'),10);
 
@@ -97,13 +98,13 @@ function doPost(request) {
     } 
     else {
       // Log a message indicating that the user is not allowed to chat
-      Logger.log("User with ID " + userId + " is not allowed to chat with the bot.");
+      console.log("User with ID " + userId + " is not allowed to chat with the bot.");
       sendToTelegram("Sorry, you are not allowed to chat with this bot.", chatId);
       writeToSheet("User with ID " + userId + " is not allowed to chat with the bot.", "error");
     }
   } catch (error) {
     // Log the error message
-    Logger.log(error.message);
+    console.log(error.message);
     writeToSheet('Error in doPost(): '+error.message, "error");
     // Return an error response
     // return ContentService.createTextOutput(JSON.stringify({"success": false, "error": error.message})).setMimeType(ContentService.MimeType.JSON);
@@ -114,26 +115,9 @@ function doPost(request) {
 function testOpenAI(){
   var message = 'Are you alive?';
 
-  var options = {
-    "method": "POST",
-    "headers": {
-      "Authorization": "Bearer " + OPENAI_API_KEY,
-      "Content-Type" : "application/json",
-    },
-    "payload": JSON.stringify({
-      "model": OPENAI_MODEL,
-      "messages": [{"role": "user", "content": message}],
-      "max_tokens": OPENAI_MAX_TOKEN,
-      "temperature": 0.7,
-      "top_p": 1,
-      "frequency_penalty": 0,
-      "presence_penalty": 0
-    })
-  };  
-  var response = UrlFetchApp.fetch(OPENAI_URL, options);
+  var response = sendToOpenAI(message);
   Logger.log(response);
 }
-
 
 // Sends a message to the OpenAI API and returns the response
 function sendToOpenAI(message) {
@@ -147,12 +131,12 @@ function sendToOpenAI(message) {
       },
       "payload": JSON.stringify({
         "model": OPENAI_MODEL,
-        "messages": [{"role": "user", "content": message}],
-        "max_tokens": OPENAI_MAX_TOKEN,
-        "temperature": 0.7,
-        "top_p": 1,
-        "frequency_penalty": 0,
-        "presence_penalty": 0
+        "messages": [{"role": "user", "content": message},],
+        //"max_tokens": OPENAI_MAX_TOKEN,
+        //"temperature": 0.7,
+        //"top_p": 1,
+        //"frequency_penalty": 0,
+        //"presence_penalty": 0
       })
     }; 
 
@@ -165,7 +149,12 @@ function sendToOpenAI(message) {
     // Loop through the choices array
     for (var i = 0; i < response.choices.length; i++) {
       // Get the text of the current choice
-      var choiceText = response.choices[i].text;
+      if(OPENAI_ENDPOINT == "/v1/completions"){
+        var choiceText = response.choices[i].text;
+      }
+      if (OPENAI_ENDPOINT == "/v1/chat/completions") {
+        var choiceText = response.choices[i].message.content;
+      }
 
       // Add the text to the response text
       responseText += choiceText;
@@ -175,7 +164,7 @@ function sendToOpenAI(message) {
     return responseText;
   } catch (error) {
     // Log the error message
-    Logger.log(error.message);
+    console.log(error.message);
   
     // Return an error message
     return "An error occurred while sending the request to the OpenAI API. Error: "+JSON.stringify(error);
@@ -187,7 +176,7 @@ function sendToOpenAI(message) {
 function sendToTelegram(message, chatId) {
   var url = telegramUrl + "/sendMessage?chat_id=" + chatId + "&text=" + encodeURIComponent(message);
   var response = UrlFetchApp.fetch(url);
-  Logger.log(response.getContentText());  
+  console.log(response.getContentText());  
 }
 
 // Writes a value to the specified column in the Google Sheets document
@@ -255,8 +244,8 @@ function checkSheetHeader() {
     range.setValues([newHeaders]);
     SpreadsheetApp.flush(); // modify commit
 
-    Logger.log('Sheet first row Add Header.');
+    console.log('Sheet first row Add Header.');
   } else {
-    Logger.log('Sheet Header is already.');
+    console.log('Sheet Header is already.');
   }
 }
