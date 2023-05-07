@@ -21,7 +21,7 @@ var BOT_TOKEN = userProperties.getProperty('bot_token');           // @BotFather
 var OPENAI_API_KEY = userProperties.getProperty('openai_api_key'); // https://beta.openai.com/account/api-keys
 var OPENAI_URL = "https://api.openai.com" + userProperties.getProperty('openai_url');
 var OPENAI_MODEL = userProperties.getProperty('openai_model');
-var OPENAI_MAX_TOKEN = userProperties.getProperty('openai_max_token');
+var OPENAI_MAX_TOKEN = parseInt(userProperties.getProperty('openai_max_token'),10);
 
 // Replace SPREADSHEET_ID with the ID of your Google Sheets document
 // To get this, go to your sheet URL and grab the id from here: https://docs.google.com/spreadsheets/d/{ID_HERE}/edit
