@@ -2,8 +2,9 @@
 // allowUsers      : [nnnnnnnnn, nnnnnnnnn, nnnnnnnnn,]
 // bot_token       : [Telegram bot token]
 // openai_api_key  : [openai_api_key]
-// openai_api_url  : https://platform.openai.com/docs/models/model-endpoint-compatibility
-// openai_api_model: https://platform.openai.com/docs/models/model-endpoint-compatibility 
+// openai_url      : [/v1/chat/completions ] https://platform.openai.com/docs/models/model-endpoint-compatibility
+// openai_model    : [gpt-3.5-turbo] https://platform.openai.com/docs/models/model-endpoint-compatibility 
+// openai_max_token: [2048]
 // ssID            : [SpreadSheetID]
 // webhook_url     : [This Project web app URL]
 // 
@@ -18,8 +19,9 @@ var ALLOWED_USER_IDS = userProperties.getProperty('allowUsers')
 // https://developers.google.com/apps-script/reference/properties?hl=en
 var BOT_TOKEN = userProperties.getProperty('bot_token');           // @BotFather in Telegram
 var OPENAI_API_KEY = userProperties.getProperty('openai_api_key'); // https://beta.openai.com/account/api-keys
-var OPENAI_API_URL = "https://api.openai.com" + userProperties.getProperty('openai_api_url');
-var OPENAI_API_MODEL = userProperties.getProperty('openai_api_model');
+var OPENAI_URL = "https://api.openai.com" + userProperties.getProperty('openai_url');
+var OPENAI_MODEL = userProperties.getProperty('openai_model');
+var OPENAI_MAX_TOKEN = userProperties.getProperty('openai_max_token');
 
 // Replace SPREADSHEET_ID with the ID of your Google Sheets document
 // To get this, go to your sheet URL and grab the id from here: https://docs.google.com/spreadsheets/d/{ID_HERE}/edit
@@ -119,16 +121,16 @@ function testOpenAI(){
       "Content-Type" : "application/json",
     },
     "payload": JSON.stringify({
-      "model": OPENAI_API_MODEL,
+      "model": OPENAI_MODEL,
       "messages": [{"role": "user", "content": message}],
-      "max_tokens": 200,
+      "max_tokens": OPENAI_MAX_TOKEN,
       "temperature": 0.7,
       "top_p": 1,
       "frequency_penalty": 0,
       "presence_penalty": 0
     })
   };  
-  var response = UrlFetchApp.fetch(OPENAI_API_URL, options);
+  var response = UrlFetchApp.fetch(OPENAI_URL, options);
   Logger.log(response);
 }
 
@@ -144,9 +146,9 @@ function sendToOpenAI(message) {
         "Content-Type" : "application/json",
       },
       "payload": JSON.stringify({
-        "model": OPENAI_API_MODEL,
+        "model": OPENAI_MODEL,
         "messages": [{"role": "user", "content": message}],
-        "max_tokens": 200,
+        "max_tokens": OPENAI_MAX_TOKEN,
         "temperature": 0.7,
         "top_p": 1,
         "frequency_penalty": 0,
@@ -155,7 +157,7 @@ function sendToOpenAI(message) {
     }; 
 
     // Send the request and parse the response
-    var response = JSON.parse(UrlFetchApp.fetch(OPENAI_API_URL, options));
+    var response = JSON.parse(UrlFetchApp.fetch(OPENAI_URL, options));
     
     // Initialize the response text
     var responseText = "";
