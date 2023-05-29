@@ -93,8 +93,15 @@ function doPost(request) {
       // Write the answer to the 'answer' column in the Google Sheets document
       writeToSheet(response, "answer");
 
+      // Split massage three line feed or about 100 charactors blocks
+      var msgBuffer = splitMassage(response);
+
       // Send the answer back to the Telegram chat
-      sendToTelegram(response, chatId);
+      for (let msg of msgBuffer){
+        sendToTelegram(msg, chatId);
+
+      }
+
     } 
     else {
       // Log a message indicating that the user is not allowed to chat
@@ -113,7 +120,7 @@ function doPost(request) {
 
 // Function to test OpenAI request in the debugger
 function testOpenAI(){
-  var message = 'Are you alive?';
+  var message = 'openai api で max_length の使用例を教えてください。';
 
   var response = sendToOpenAI(message);
   Logger.log(response);
@@ -142,7 +149,8 @@ function sendToOpenAI(message) {
 
     // Send the request and parse the response
     var response = JSON.parse(UrlFetchApp.fetch(OPENAI_URL, options));
-    
+    Logger.log(response);
+
     // Initialize the response text
     var responseText = "";
 
@@ -174,9 +182,26 @@ function sendToOpenAI(message) {
 
 // Sends a message to the specified Telegram chat
 function sendToTelegram(message, chatId) {
+
   var url = telegramUrl + "/sendMessage?chat_id=" + chatId + "&text=" + encodeURIComponent(message);
   var response = UrlFetchApp.fetch(url);
   console.log(response.getContentText());  
+
+/*
+  var payload = {
+    'method': 'sendMessage',
+    'chat_id': chatId,
+    'text': message,
+    'parse_mode': 'HTML'
+  }
+  var data = {
+    'method': 'post',
+    "Content-Type" : "application/json",
+    'payload': JSON.stringify(payload),
+  }
+  var response = UrlFetchApp.fetch(telegramUrl + '/', data);
+*/
+
 }
 
 // Writes a value to the specified column in the Google Sheets document
@@ -248,4 +273,46 @@ function checkSheetHeader() {
   } else {
     console.log('Sheet Header is already.');
   }
+}
+
+
+// Function to test splitMassage 
+function testSplitMassage(){
+  var message = '1\r\n2345\r\n67890\r\n12345\r\n67890\r\n';
+
+  var response = splitMassage(message);
+  Logger.log(response);
+
+  // Send the answer back to the Telegram chat
+  for (let msg of response){
+    Logger.log(msg);
+    //sendToTelegram(msg, chatId);
+
+  }
+}
+
+function splitMassage(massage){
+  /*
+  引数で渡されたmessageを改行毎に分割して、3要素毎か最初に100文字を超えた要素で
+  配列を作りなおす。配列を作り直す際は、改行を付加する。
+  */
+  let msgResponse = [];
+
+  var br = /[\r\n]+/g; //改行
+  var messages = massage.split(br);
+
+  var buffer = ""
+  var cntBuffer = 0
+  for (let i of messages){
+    buffer += i + "\r\n";
+    cntBuffer++;
+    if (cntBuffer == 2){
+      let j = msgResponse.push(buffer);
+      buffer = "";
+      cntBuffer = 0;
+    }
+  }
+  j = msgResponse.push('--- END ---');
+
+  return msgResponse;
 }
